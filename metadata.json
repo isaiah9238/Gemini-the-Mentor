@@ -1,0 +1,8 @@
+{
+  "name": "The Genesis of Machine Cognition",
+  "description": "An interactive scientific workbench exploring the physical silicon medium, historical logical foundations, emergent sparks of AGI, and neuromorphic biophysics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

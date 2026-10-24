@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // User profile documents
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) && isValidId(userId);
+
+      // User experiments
+      match /experiments/{experimentId} {
+        allow read, write: if isOwner(userId) && isValidId(userId) && isValidId(experimentId);
+      }
+
+      // User research blueprints
+      match /blueprints/{blueprintId} {
+        allow read, write: if isOwner(userId) && isValidId(userId) && isValidId(blueprintId);
+      }
+
+      // User connected apps & registries
+      match /connected_apps/{appId} {
+        allow read, write: if isOwner(userId) && isValidId(userId) && isValidId(appId);
+      }
+
+      // User authored agent skills
+      match /skills/{skillId} {
+        allow read, write: if isOwner(userId) && isValidId(userId) && isValidId(skillId);
+      }
+
+      // User cognitive mind maps
+      match /mindmaps/{mapId} {
+        allow read, write: if isOwner(userId) && isValidId(userId) && isValidId(mapId);
+      }
+
+      // User telemetry & analytics
+      match /analytics/{analyticsId} {
+        allow read, write: if isOwner(userId) && isValidId(userId) && isValidId(analyticsId);
+      }
+
+      // User code inspection reports
+      match /inspections/{inspectionId} {
+        allow read, write: if isOwner(userId) && isValidId(userId) && isValidId(inspectionId);
+      }
+    }
+
+    // Public / shared registry for cross-app discovery (Agent Skill Registry)
+    match /shared_registries/{registryId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidId(registryId);
+
+      match /skills/{skillId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && isValidId(skillId);
+      }
+    }
+  }
+}
