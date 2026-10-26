@@ -14,3 +14,11 @@ firebase_applet_config.xml
 firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
+
+# Google OAuth & Client Secrets
+*client_secret*.json
+client_secret*.json
+**/client_secret*.json
+credentials.json
+public/assets/aistudio/client_secret*.json
+/public/assets/aistudio/client_secret_2_273839089094-bhngsnq05plpj0jpqj6bnm9dbg7mm65g.apps.googleusercontent.com_1dfc4a6d.json

@@ -28,6 +28,12 @@ import {
   Network,
   ShieldCheck,
   Compass,
+  AlertCircle,
+  ExternalLink,
+  Key,
+  Copy,
+  Check,
+  X,
 } from 'lucide-react';
 
 export default function App() {
@@ -50,6 +56,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [copiedSecret, setCopiedSecret] = useState(false);
 
   useEffect(() => {
     testFirestoreConnection();
@@ -238,8 +245,103 @@ export default function App() {
       {/* Main Content Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-6">
         {authError && (
-          <div className="bg-rose-950/80 border border-rose-800 rounded-xl p-3 text-xs text-rose-300">
-            {authError}
+          <div className="bg-rose-950/70 border border-rose-800 rounded-2xl p-5 shadow-2xl relative overflow-hidden space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-900/60 border border-rose-700 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5 text-rose-400" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    Firebase Authentication: OAuth Client Secret Mismatch
+                  </h3>
+                  <p className="text-xs text-rose-200/90 leading-relaxed max-w-3xl">
+                    Google rejected the sign-in token exchange because a new client secret was created in Google Cloud Console, but your Firebase Authentication Google provider still has the previous secret stored.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAuthError(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+                title="Dismiss message"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Step-by-Step Resolution Steps */}
+            <div className="bg-slate-950/70 border border-rose-900/40 rounded-xl p-4 space-y-3 text-xs text-slate-300">
+              <div className="text-[11px] font-bold text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-rose-400" />
+                Required Fix in Firebase Console (30 seconds):
+              </div>
+
+              <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-300 leading-relaxed">
+                <li>
+                  Open{' '}
+                  <a
+                    href="https://console.firebase.google.com/project/gen-lang-client-0573899362/authentication/providers"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sky-400 hover:underline inline-flex items-center gap-1 font-semibold"
+                  >
+                    Firebase Authentication &gt; Sign-in providers
+                    <ExternalLink className="w-3 h-3 inline" />
+                  </a>
+                </li>
+                <li>
+                  Click on the <strong>Google</strong> provider (pencil icon), and expand <strong>Web SDK configuration</strong>.
+                </li>
+                <li>
+                  Paste the updated <strong>Web client secret</strong> below and click <strong>Save</strong>.
+                </li>
+              </ol>
+
+              {/* Credential Helper Snippet */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-lg p-3 font-mono text-[11px]">
+                <div className="truncate max-w-md">
+                  <span className="text-slate-500 select-none">New Client Secret: </span>
+                  <span className="text-emerald-400 font-bold select-all">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</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText('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');
+                    setCopiedSecret(true);
+                    setTimeout(() => setCopiedSecret(false), 2500);
+                  }}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all border border-slate-700 shrink-0"
+                >
+                  {copiedSecret ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedSecret ? 'Copied Secret!' : 'Copy Secret'}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <div className="text-[11px] text-slate-400">
+                You can also continue using all 11 scientific modules in guest mode without signing in.
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://console.firebase.google.com/project/gen-lang-client-0573899362/authentication/providers"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-rose-600/20"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Open Firebase Console
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setAuthError(null)}
+                  className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all border border-slate-700"
+                >
+                  Continue in Guest Mode
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
