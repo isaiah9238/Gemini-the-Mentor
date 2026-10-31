@@ -83,7 +83,7 @@ export const HistoricalFoundationsModule: React.FC = () => {
       {/* Sub-Navigation Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-2">
         {[
-          { id: 'lovelace', label: '1. Ada Lovelace & Note G Algorithm' },
+          { id: 'lovelace', label: '1. Ada Lovelace — The World\'s First Computer Programmer' },
           { id: 'turing', label: '2. Turing Test & The Imitation Game' },
           { id: 'mcculloch', label: '3. McCulloch-Pitts (1943) Neural Sandbox' },
           { id: 'dartmouth', label: '4. Dartmouth 1956 & Arthur Samuel ML' },
@@ -111,14 +111,14 @@ export const HistoricalFoundationsModule: React.FC = () => {
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-amber-400" /> Lovelace Note G: Bernoulli Sequence Generator
+                  <Terminal className="w-4 h-4 text-amber-400" /> Ada Lovelace: The First Computer Programmer
                 </h3>
                 <span className="text-xs font-mono text-slate-400">1843 Mechanical Punched Cards</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                In Note G of her translation of Menabrea's memoir, Lovelace detailed the exact variable
-                table and punched card instructions for the Analytical Engine's "Mill" (CPU) and "Store"
-                (Memory) to calculate Bernoulli numbers $B_n$.
+                In Note G (1843), Ada Lovelace inaugurated <strong>the skill to program computers</strong>.
+                She realized that Charles Babbage's Analytical Engine separated hardware from software: the
+                "Mill" executed operations while punched cards represented sequential algorithms to calculate Bernoulli numbers $B_n$.
               </p>
 
               <div className="flex items-center gap-3">

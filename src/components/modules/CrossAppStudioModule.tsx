@@ -35,7 +35,20 @@ import {
   Tag,
   ArrowRight,
   FolderGit2,
+  Copy,
+  RotateCcw,
+  Code2,
 } from 'lucide-react';
+import {
+  ProgramSpecification,
+  ProgrammingParadigm,
+  ExecutionResult,
+  ProgramAudit,
+  getPresetProgramSpecifications,
+  synthesizeProgram,
+  executeProgramSimulation,
+  auditProgramSafety,
+} from '../../logic/programmerSkill.js';
 import {
   ConnectedAppConfig,
   AgentSkillDefinition,
@@ -77,10 +90,23 @@ export function CrossAppStudioModule({
 }: CrossAppStudioProps) {
   // Navigation sub-tabs within Cross-App Studio:
   // 1: "registry" (Search Firestore of other apps / Agent Skill Registry)
-  // 2: "write-skill" (Write Skill Interface & editor)
-  // 3: "mind-map" (Interactive Architecture Mind Map)
-  // 4: "analytics" (App Analytics & Telemetry Dashboard)
-  const [subTab, setSubTab] = useState<'registry' | 'write-skill' | 'mind-map' | 'analytics'>('registry');
+  // 2: "programmer" (The Computer Programmer: The Skill to Program Computers)
+  // 3: "write-skill" (Write Skill Interface & editor)
+  // 4: "mind-map" (Interactive Architecture Mind Map)
+  // 5: "analytics" (App Analytics & Telemetry Dashboard)
+  const [subTab, setSubTab] = useState<'registry' | 'programmer' | 'write-skill' | 'mind-map' | 'analytics'>('registry');
+
+  // The Computer Programmer Skill Studio State
+  const presetPrograms = getPresetProgramSpecifications();
+  const [selectedProgramId, setSelectedProgramId] = useState<string>(presetPrograms[0].id);
+  const [currentProgram, setCurrentProgram] = useState<ProgramSpecification>(presetPrograms[0]);
+  const [programmerTaskPrompt, setProgrammerTaskPrompt] = useState('');
+  const [programmerParadigm, setProgrammerParadigm] = useState<ProgrammingParadigm>('lovelace-analytical');
+  const [isSynthesizingProgram, setIsSynthesizingProgram] = useState(false);
+  const [programExecutionResult, setProgramExecutionResult] = useState<ExecutionResult | null>(null);
+  const [isExecutingSimulation, setIsExecutingSimulation] = useState(false);
+  const [showFullTrace, setShowFullTrace] = useState(false);
+  const [programAudit, setProgramAudit] = useState<ProgramAudit>(() => auditProgramSafety(presetPrograms[0]));
 
   // Connected Apps state
   const [connectedApps, setConnectedApps] = useState<ConnectedAppConfig[]>(() => {
@@ -353,6 +379,113 @@ export function CrossAppStudioModule({
     setNotification(`Downloaded ${activeSkill.name}.SKILL.md to computer.`);
   };
 
+  // The Computer Programmer Handlers
+  const handleSelectProgrammerPreset = (spec: ProgramSpecification) => {
+    setSelectedProgramId(spec.id);
+    setCurrentProgram(spec);
+    setProgrammerParadigm(spec.paradigm);
+    setProgramExecutionResult(null);
+    setProgramAudit(auditProgramSafety(spec));
+  };
+
+  const handleSynthesizeProgram = () => {
+    if (!programmerTaskPrompt.trim()) return;
+    setIsSynthesizingProgram(true);
+    setTimeout(() => {
+      const synthesized = synthesizeProgram(programmerTaskPrompt, programmerParadigm);
+      setCurrentProgram(synthesized);
+      setSelectedProgramId(synthesized.id);
+      setProgramExecutionResult(null);
+      setProgramAudit(auditProgramSafety(synthesized));
+      setIsSynthesizingProgram(false);
+      setNotification(`Synthesized new program "${synthesized.title}" via The Computer Programmer skill!`);
+    }, 200);
+  };
+
+  const handleRunProgramSimulation = () => {
+    setIsExecutingSimulation(true);
+    setTimeout(() => {
+      const result = executeProgramSimulation(currentProgram);
+      setProgramExecutionResult(result);
+      setIsExecutingSimulation(false);
+      setNotification(`Program executed in ${result.totalCycles} cycles (${result.metrics.estimatedEnergyNanoJoules.toFixed(2)} nJ)!`);
+    }, 150);
+  };
+
+  const handleExportProgramToVFS = () => {
+    const ext = currentProgram.paradigm === 'typescript-esm' ? 'ts' : currentProgram.paradigm === 'python-procedural' ? 'py' : currentProgram.paradigm === 'von-neumann-asm' ? 'asm' : 'txt';
+    const filename = `${currentProgram.id}.${ext}`;
+    const vfsContent = `/**
+ * Program: ${currentProgram.title}
+ * Paradigm: ${currentProgram.paradigm}
+ * Author: ${currentProgram.author}
+ * Category: ${currentProgram.taskCategory}
+ * Instructions: ${currentProgram.instructionsCount} | Memory: ${currentProgram.memoryFootprintBytes} bytes
+ * Explanation: ${currentProgram.explanation}
+ */
+
+${currentProgram.code}
+`;
+
+    try {
+      const raw = localStorage.getItem('genesis_cognition_vfs');
+      const vfsList = raw ? JSON.parse(raw) : [];
+      let skillsFolder = vfsList.find((node: any) => node.name === 'skills' && node.type === 'folder');
+      if (!skillsFolder) {
+        skillsFolder = {
+          id: 'vfs-folder-skills',
+          name: 'skills',
+          type: 'folder',
+          children: [],
+          updatedAt: new Date().toISOString(),
+        };
+        vfsList.push(skillsFolder);
+      }
+
+      const newFileNode = {
+        id: `vfs-file-${currentProgram.id}-${Date.now()}`,
+        name: filename,
+        path: `/skills/${filename}`,
+        type: 'file',
+        sizeBytes: new TextEncoder().encode(vfsContent).length,
+        mimeType: 'text/plain',
+        updatedAt: new Date().toISOString(),
+        content: vfsContent,
+      };
+
+      skillsFolder.children = skillsFolder.children || [];
+      skillsFolder.children = skillsFolder.children.filter((c: any) => c.name !== filename);
+      skillsFolder.children.push(newFileNode);
+
+      localStorage.setItem('genesis_cognition_vfs', JSON.stringify(vfsList));
+      setNotification(`Exported program to File Explorer: "/skills/${filename}"!`);
+      if (onOpenFileInExplorer) {
+        onOpenFileInExplorer(`/skills/${filename}`, vfsContent);
+      }
+    } catch (err: any) {
+      alert(`Could not export to File Explorer: ${err.message}`);
+    }
+  };
+
+  const handleCopyProgramCode = () => {
+    navigator.clipboard.writeText(currentProgram.code);
+    setNotification('Program code copied to clipboard!');
+  };
+
+  const handleDownloadProgramFile = () => {
+    const ext = currentProgram.paradigm === 'typescript-esm' ? 'ts' : currentProgram.paradigm === 'python-procedural' ? 'py' : currentProgram.paradigm === 'von-neumann-asm' ? 'asm' : 'txt';
+    const blob = new Blob([currentProgram.code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentProgram.id}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setNotification(`Downloaded ${currentProgram.id}.${ext}`);
+  };
+
   // Simulate a live skill execution
   const handleSimulateSkillRun = (skill: AgentSkillDefinition) => {
     const latency = Math.floor(Math.random() * 45) + 20;
@@ -456,7 +589,7 @@ export function CrossAppStudioModule({
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div className="flex items-center p-1 bg-slate-950/80 border border-slate-800 rounded-xl shrink-0">
+          <div className="flex flex-wrap items-center p-1 bg-slate-950/80 border border-slate-800 rounded-xl shrink-0 gap-1">
             <button
               onClick={() => setSubTab('registry')}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
@@ -469,6 +602,17 @@ export function CrossAppStudioModule({
               <span>1. Firestore Registry</span>
             </button>
             <button
+              onClick={() => setSubTab('programmer')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                subTab === 'programmer'
+                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-slate-950 font-bold shadow-md shadow-orange-500/30'
+                  : 'text-amber-400/90 hover:text-amber-300 hover:bg-slate-900'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5" />
+              <span>2. The Computer Programmer (Skill Studio)</span>
+            </button>
+            <button
               onClick={() => setSubTab('write-skill')}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                 subTab === 'write-skill'
@@ -477,7 +621,7 @@ export function CrossAppStudioModule({
               }`}
             >
               <FileCode className="w-3.5 h-3.5" />
-              <span>2. Write Skill Interface</span>
+              <span>3. Write Skill Interface</span>
             </button>
             <button
               onClick={() => setSubTab('mind-map')}
@@ -488,7 +632,7 @@ export function CrossAppStudioModule({
               }`}
             >
               <GitBranch className="w-3.5 h-3.5" />
-              <span>3. Mind Map</span>
+              <span>4. Mind Map</span>
             </button>
             <button
               onClick={() => setSubTab('analytics')}
@@ -499,7 +643,7 @@ export function CrossAppStudioModule({
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
-              <span>4. App Analytics</span>
+              <span>5. App Analytics</span>
             </button>
           </div>
         </div>
@@ -720,7 +864,411 @@ export function CrossAppStudioModule({
       )}
 
       {/* ========================================================
-          SUB-TAB 2: WRITE SKILL INTERFACE (SKILL STUDIO)
+          SUB-TAB 2: THE COMPUTER PROGRAMMER (SKILL STUDIO)
+         ======================================================== */}
+      {subTab === 'programmer' && (
+        <div className="space-y-6">
+          {/* Sub-tab Hero Card */}
+          <div className="bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+            <div className="absolute right-0 top-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-2">
+                  <Terminal className="w-3.5 h-3.5" />
+                  <span>The Computer Programmer • The Skill to Program Computers</span>
+                </div>
+                <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                  The Craft of Deterministic Computation
+                </h3>
+                <p className="text-xs text-slate-300 max-w-3xl mt-1 leading-relaxed">
+                  Inaugurated by <strong>Ada Lovelace in 1843</strong> (Note G) through mechanical punched operation cards,
+                  formalized by <strong>Alan Turing in 1936</strong> as universal state-machine automata, and embodied in modern
+                  stored-program architectures. <em>"The Skill to Program Computers"</em> is the art of translating abstract
+                  human intentions into deterministic, verifiable instruction sequences with rigorous thermodynamic and complexity bounds.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleRunProgramSimulation}
+                  disabled={isExecutingSimulation}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-900/30 transition-all disabled:opacity-50"
+                >
+                  <Play className={`w-3.5 h-3.5 ${isExecutingSimulation ? 'animate-spin' : ''}`} />
+                  <span>{isExecutingSimulation ? 'Executing...' : 'Run Simulation'}</span>
+                </button>
+                <button
+                  onClick={handleExportProgramToVFS}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-medium text-xs rounded-xl transition-colors"
+                >
+                  <FolderGit2 className="w-3.5 h-3.5" />
+                  <span>Export to VFS</span>
+                </button>
+                <button
+                  onClick={handleCopyProgramCode}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-medium text-xs rounded-xl transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Code</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column: Preset Program Library & Skill Synthesis Engine (4 cols) */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Preset Programs Library */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Code2 className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Foundational Program Library
+                    </h4>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">{presetPrograms.length} Presets</span>
+                </div>
+
+                <div className="space-y-2">
+                  {presetPrograms.map((spec) => (
+                    <div
+                      key={spec.id}
+                      onClick={() => handleSelectProgrammerPreset(spec)}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                        selectedProgramId === spec.id
+                          ? 'bg-amber-950/40 border-amber-500/70 shadow-md shadow-amber-950/40'
+                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-white truncate">{spec.title}</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30 shrink-0">
+                          {spec.paradigm}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-2">
+                        {spec.description}
+                      </p>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1.5 border-t border-slate-800/80">
+                        <span>{spec.instructionsCount} instr • {spec.memoryFootprintBytes}B</span>
+                        <span className="text-amber-400/80">{spec.author.split('(')[0]}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dynamic Synthesis Engine (The Skill to Program Computers) */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+                  <Sparkles className="w-4 h-4 text-sky-400" />
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                    Autonomous Code Synthesizer
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Apply <em>The Skill to Program Computers</em> to synthesize a verified program from natural language intent.
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Task Specification</label>
+                    <textarea
+                      rows={2}
+                      value={programmerTaskPrompt}
+                      onChange={(e) => setProgrammerTaskPrompt(e.target.value)}
+                      placeholder="e.g., Compute Fibonacci sequence using accumulator registers, or evaluate binary parity"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Target Paradigm</label>
+                    <select
+                      value={programmerParadigm}
+                      onChange={(e) => setProgrammerParadigm(e.target.value as ProgrammingParadigm)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="lovelace-analytical">Lovelace Analytical Engine (1843 Punch Cards)</option>
+                      <option value="turing-machine">Turing Machine (1936 Universal Automata)</option>
+                      <option value="von-neumann-asm">Von Neumann Stored-Program Assembly (1945)</option>
+                      <option value="typescript-esm">Modern TypeScript ESM (Typed Modular)</option>
+                      <option value="python-procedural">Python Procedural (Thermodynamic Simulation)</option>
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={handleSynthesizeProgram}
+                    disabled={isSynthesizingProgram || !programmerTaskPrompt.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all disabled:opacity-50"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 ${isSynthesizingProgram ? 'animate-spin' : ''}`} />
+                    <span>{isSynthesizingProgram ? 'Synthesizing...' : 'Synthesize Program (Execute Skill)'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Invariant Verification & Safety Audit */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Formal Safety & Invariant Audit
+                    </h4>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    {programAudit.safe ? 'VERIFIED' : 'WARNING'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                  <div className="bg-slate-950/60 border border-slate-800/80 p-2 rounded-lg">
+                    <span className="text-slate-500 block text-[10px]">Time Complexity</span>
+                    <span className="text-amber-300 font-bold">{programAudit.timeComplexity}</span>
+                  </div>
+                  <div className="bg-slate-950/60 border border-slate-800/80 p-2 rounded-lg">
+                    <span className="text-slate-500 block text-[10px]">Space Complexity</span>
+                    <span className="text-sky-300 font-bold">{programAudit.spaceComplexity}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                    Foundational Principles Enforced:
+                  </span>
+                  {programAudit.principles.map((principle, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>{principle}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Code Workbench & Simulation Engine (8 cols) */}
+            <div className="lg:col-span-8 space-y-6">
+              {/* Program Overview & Code Card */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col overflow-hidden shadow-xl">
+                {/* Header Toolbar */}
+                <div className="p-3.5 border-b border-slate-800 bg-slate-950/70 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                      {currentProgram.paradigm}
+                    </span>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-white truncate">{currentProgram.title}</h4>
+                      <p className="text-[10px] text-slate-400">Author: {currentProgram.author}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDownloadProgramFile}
+                      title="Download file to computer"
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs border border-slate-700 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={handleCopyProgramCode}
+                      title="Copy code to clipboard"
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs border border-slate-700 transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={handleRunProgramSimulation}
+                      disabled={isExecutingSimulation}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors shadow-md shadow-emerald-900/20"
+                    >
+                      <Play className="w-3 h-3" />
+                      <span>{isExecutingSimulation ? 'Running...' : 'Execute'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Explanation text */}
+                <div className="px-4 py-2.5 bg-amber-950/20 border-b border-slate-800/80 text-xs text-amber-200/90 leading-relaxed">
+                  <strong>Architectural Note:</strong> {currentProgram.explanation}
+                </div>
+
+                {/* Code Body with Line Numbers */}
+                <div className="bg-slate-950 p-4 font-mono text-xs overflow-x-auto max-h-[380px] leading-relaxed text-slate-200">
+                  <pre className="whitespace-pre">
+                    {currentProgram.code.split('\n').map((line, idx) => (
+                      <div key={idx} className="flex">
+                        <span className="w-8 text-slate-600 select-none shrink-0 text-right pr-3 font-mono">
+                          {idx + 1}
+                        </span>
+                        <span
+                          className={
+                            line.startsWith(';') || line.startsWith('#') || line.startsWith('//') || line.startsWith('/*')
+                              ? 'text-slate-500 italic'
+                              : line.includes('LOAD') || line.includes('MOV') || line.includes('MUL') || line.includes('SUB') || line.includes('HALT') || line.includes('DIV') || line.includes('ADD')
+                              ? 'text-amber-300 font-semibold'
+                              : line.includes('function') || line.includes('export') || line.includes('const') || line.includes('return')
+                              ? 'text-sky-300 font-semibold'
+                              : 'text-slate-200'
+                          }
+                        >
+                          {line}
+                        </span>
+                      </div>
+                    ))}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Live Simulation Execution Dashboard */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Simulation Engine & Machine State Inspector
+                    </h4>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowFullTrace(!showFullTrace)}
+                      className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800/80 border border-slate-700/60"
+                    >
+                      {showFullTrace ? 'Show Compact Trace' : 'Show Full Trace Table'}
+                    </button>
+                    <button
+                      onClick={handleRunProgramSimulation}
+                      className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Re-run</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* If simulation not run yet, provide quick run button */}
+                {!programExecutionResult && (
+                  <div className="text-center py-8 border border-dashed border-slate-800 rounded-xl bg-slate-950/40">
+                    <Terminal className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                    <p className="text-xs text-slate-400 mb-3">
+                      Program ready for deterministic execution. Click execute to run register simulation and view trace table.
+                    </p>
+                    <button
+                      onClick={handleRunProgramSimulation}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-900/30 transition-all"
+                    >
+                      Execute Simulation
+                    </button>
+                  </div>
+                )}
+
+                {/* Simulation Output & Metrics */}
+                {programExecutionResult && (
+                  <div className="space-y-4">
+                    {/* Top Metric Chips */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+                      <div className="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
+                        <span className="text-[10px] text-slate-500 block uppercase">Total Cycles</span>
+                        <span className="text-base font-bold text-white">
+                          {programExecutionResult.totalCycles}
+                        </span>
+                      </div>
+                      <div className="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
+                        <span className="text-[10px] text-slate-500 block uppercase">Memory Footprint</span>
+                        <span className="text-base font-bold text-sky-400">
+                          {programExecutionResult.metrics.memoryUsedBytes} B
+                        </span>
+                      </div>
+                      <div className="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
+                        <span className="text-[10px] text-slate-500 block uppercase">Landauer Energy</span>
+                        <span className="text-base font-bold text-amber-400">
+                          {programExecutionResult.metrics.estimatedEnergyNanoJoules.toFixed(2)} nJ
+                        </span>
+                      </div>
+                      <div className="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
+                        <span className="text-[10px] text-slate-500 block uppercase">Execution Output</span>
+                        <span className="text-base font-bold text-emerald-400 truncate block">
+                          {typeof programExecutionResult.output === 'object'
+                            ? JSON.stringify(programExecutionResult.output)
+                            : String(programExecutionResult.output)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Machine State Registers */}
+                    <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-2">
+                        Final Machine State Registers & Variables:
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(programExecutionResult.finalState).map(([key, val]) => (
+                          <div
+                            key={key}
+                            className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono flex items-center gap-1.5"
+                          >
+                            <span className="text-amber-400 font-bold">{key}:</span>
+                            <span className="text-slate-200">
+                              {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Execution Trace Table */}
+                    <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/80">
+                      <div className="p-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-300">
+                          Execution Step-by-Step Trace ({programExecutionResult.trace.length} steps recorded)
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {showFullTrace ? 'All Steps' : 'Top 5 Steps'}
+                        </span>
+                      </div>
+
+                      <div className="overflow-x-auto max-h-60">
+                        <table className="w-full text-left text-xs font-mono">
+                          <thead>
+                            <tr className="border-b border-slate-800 bg-slate-900/50 text-slate-400 text-[11px]">
+                              <th className="py-2 px-3">Step</th>
+                              <th className="py-2 px-3">PC</th>
+                              <th className="py-2 px-3">Instruction / Card</th>
+                              <th className="py-2 px-3">Machine State Snapshot</th>
+                              <th className="py-2 px-3">Log / Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/60 text-[11px]">
+                            {(showFullTrace
+                              ? programExecutionResult.trace
+                              : programExecutionResult.trace.slice(0, 5)
+                            ).map((t) => (
+                              <tr key={t.step} className="hover:bg-slate-900/40">
+                                <td className="py-1.5 px-3 font-bold text-amber-400">#{t.step}</td>
+                                <td className="py-1.5 px-3 text-slate-400">{t.programCounter}</td>
+                                <td className="py-1.5 px-3 text-white font-semibold">{t.instruction}</td>
+                                <td className="py-1.5 px-3 text-slate-300 max-w-xs truncate">
+                                  {JSON.stringify(t.state)}
+                                </td>
+                                <td className="py-1.5 px-3 text-emerald-400">{t.outputLog}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          SUB-TAB 3: WRITE SKILL INTERFACE (SKILL STUDIO)
          ======================================================== */}
       {subTab === 'write-skill' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

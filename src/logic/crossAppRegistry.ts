@@ -243,6 +243,47 @@ Implements biological synaptic plasticity: "cells that fire together, wire toget
       updatedAt: new Date().toISOString(),
       invocationsCount: 19800,
     },
+    {
+      id: 'skill-computer-programmer',
+      name: 'computer-programmer',
+      version: '2.4.0',
+      description: 'The skill to program computers. Synthesizes algorithms, deterministic control loops, memory architectures, and verified software across analytical, automata, assembly, and modern typed paradigms.',
+      category: 'logic',
+      author: 'Ada Lovelace & Turing Computing Institute',
+      tags: ['computer-programmer', 'program-computers', 'algorithms', 'lovelace', 'von-neumann', 'software-synthesis', 'code'],
+      parameters: [
+        { name: 'problemSpecification', type: 'string', description: 'Algorithmic task or formal computational goal', required: true },
+        { name: 'paradigm', type: 'string', description: 'Target paradigm: lovelace-analytical, turing-machine, von-neumann-asm, or typescript-esm', required: true },
+        { name: 'optimizationGoal', type: 'string', description: 'Optimization focus: cycles, memory, or thermodynamic floor', required: false },
+      ],
+      steps: [
+        'Decompose problem specification into discrete mathematical state transitions and invariants',
+        'Allocate memory registers, address space, variable columns, or typed structures',
+        'Establish deterministic control flow loops, branching predicates, and termination bounds',
+        'Synthesize verified machine instruction set or typed ECMAScript code',
+        'Audit program correctness against Landauer erasure cost and halting criteria',
+      ],
+      markdownContent: `# computer-programmer
+
+The definitive skill to program computers: transforms abstract specifications into verified algorithms, instruction sequences, and executable software.
+
+## Historical & Theoretical Roots
+- **Ada Lovelace (1843)**: Note G on Babbage's Analytical Engine—the invention of software.
+- **Alan Turing (1936)**: Universal Turing Machine ($UTM$) tape state transitions.
+- **John von Neumann (1945)**: Stored-program architecture with unified memory addressing.
+
+## Usage
+\`\`\`typescript
+import { synthesizeProgram, executeProgramSimulation } from '../logic/programmerSkill.js';
+
+const program = synthesizeProgram('Fibonacci', 'von-neumann-asm', 'Compute F(n) in CPU registers');
+const execution = executeProgramSimulation(program, { n: 8 });
+console.log(execution.output);
+\`\`\`
+`,
+      updatedAt: new Date().toISOString(),
+      invocationsCount: 42150,
+    },
   ];
 }
 

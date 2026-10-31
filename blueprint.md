@@ -56,7 +56,11 @@ Every subsystem and newly generated component in the repository must adhere to t
 
 ## 4. Current Feature Set & Module Inventory
 
-The application is structured into **11 top-level tabs** in `src/App.tsx`:
+The application supports **Dual Navigation Layouts** toggleable at any time from the top header:
+1. **2-Row Header Grid (Default)**: Organizes the 11 modules into two thematic rows (*Foundations & Physics* and *Workbench & Studio*), eliminating horizontal scrolling and clipping on desktop and tablet screens.
+2. **Collapsible Left Sidebar**: Transforms the workbench into an IDE-style layout with a categorized left sidebar (`w-72`), section headers, collapse/expand toggle, and active breadcrumbs.
+
+The 11 integrated modules are organized as follows:
 
 ### 4.1. Module 1: Physical Silicon & Logic (`PhysicalSiliconModule.tsx`)
 - **3D Transistor Gate Inspector**: Exploded-assembly Three.js visualizer showing substrate, silicon dioxide dielectric, polysilicon/metal gate, tungsten vias, and copper interconnects. Real-time gate voltage switching ($0.0\text{V} \leftrightarrow 1.2\text{V}$).
@@ -88,12 +92,13 @@ The application is structured into **11 top-level tabs** in `src/App.tsx`:
 - **Emerging Hardware Frontier**: IBM NorthPole, SpinCloud digital spike processing, Texas A&M Super-Turing edge navigation, $\text{NbO}_2$ ECRAM, and LLNL ionic computing.
 
 ### 4.6. Module 6: Gemini Cognitive Lab (`GeminiLabModule.tsx`)
-- **Historical Pioneer Chatbot**: Multi-turn dialogue with 5 specialized personas:
+- **Historical Pioneer Chatbot**: Multi-turn dialogue with 6 specialized personas:
   1. *Ada Lovelace (1843)*: 19th-century symbolic computation pioneer.
   2. *Alan Turing (1950)*: Behavioral imitation game and unorganized machine theorist.
   3. *Warren McCulloch (1943)*: Connectionist formal logic pioneer.
-  4. *Neuromorphic Physicist*: Post-von Neumann hardware and Landauer thermodynamics specialist.
-  5. *The Architect*: Master systems mentor and application synthesizer.
+  4. *The Computer Programmer*: Master software practitioner embodying the craft and skill to program computers across analytical engines, automata, assembly, and modern typed architectures.
+  5. *Neuromorphic Physicist*: Post-von Neumann hardware and Landauer thermodynamics specialist.
+  6. *The Architect*: Master systems mentor and application synthesizer.
 - **Google Search Grounding**: Live query pipeline powered by `gemini-3.8-flash` returning empirical citations.
 - **Deep High Thinking**: Multi-step deductive reasoning powered by `gemini-4-argon`.
 
@@ -109,10 +114,11 @@ The application is structured into **11 top-level tabs** in `src/App.tsx`:
 - Recursive path search and storage utilization statistics.
 
 ### 4.9. Module 9: Connected Apps & Skills (`CrossAppStudioModule.tsx`)
-- Shared Firestore inter-app registry integration (`/shared_registries/agent_skill_registry/skills`).
-- Search and category filtering across Physics, Mathematics, Systems, and Biophysics.
-- Interactive SVG Mind Map visualizer mapping skill nodes and prerequisite edges.
-- Invocation telemetry and execution frequency tracking.
+- **Shared Firestore Registry**: Multi-app interop (`/shared_registries/agent_skill_registry/skills`), searching connected Firestore applications and agent tool repositories.
+- **The Computer Programmer (Skill Studio)**: Interactive studio implementing *"The Skill to Program Computers"* across 5 paradigms (Lovelace Analytical Engine 1843, Turing Machine 1936, Von Neumann Stored-Program Assembly 1945, Modern TypeScript ESM, and Landauer Python). Includes autonomous program synthesizer, live simulation runner, step trace tables, machine state inspectors, Landauer dissipation accounting, safety audits, and 1-click VFS export.
+- **Write Skill Interface**: Visual builder and raw `SKILL.md` editor with parameter/step authoring and YAML serialization.
+- **Interactive Mind Map**: SVG topological graph visualizer of skills, prerequisite edges, and app schemas.
+- **App Telemetry & Analytics**: Live invocation metrics, latency percentiles, and request logs.
 
 ### 4.10. Module 10: Code Inspector Engine (`CodeInspectorModule.tsx`)
 - AST-level code diagnostics evaluating compatibility ($0\text{–}100$ score) for incoming files or project files.
@@ -170,7 +176,8 @@ The application is structured into **11 top-level tabs** in `src/App.tsx`:
 │   │   ├── mccullochPitts.ts & mccullochPitts.test.ts
 │   │   ├── actionPotential.ts & actionPotential.test.ts
 │   │   ├── bernoulli.ts & bernoulli.test.ts
-│   │   ├── crossApp.ts & crossApp.test.ts
+│   │   ├── programmerSkill.ts & programmerSkill.test.ts  # The Computer Programmer: The skill to program computers
+│   │   ├── crossAppRegistry.ts & crossAppRegistry.test.ts
 │   │   ├── fileSystem.ts & fileSystem.test.ts
 │   │   ├── notebook.ts & notebook.test.ts
 │   │   ├── codeInspector.ts & codeInspector.test.ts

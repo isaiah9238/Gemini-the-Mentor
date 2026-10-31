@@ -30,6 +30,12 @@ test('getPreconfiguredSkills contains foundational AI and physics skills', () =>
   const tom = skills.find((s) => s.name === 'theory-of-mind-social-probe');
   assert.ok(tom);
   assert.equal(tom?.category, 'cognitive');
+
+  const programmer = skills.find((s) => s.name === 'computer-programmer');
+  assert.ok(programmer);
+  assert.equal(programmer?.category, 'logic');
+  assert.ok(programmer?.tags.includes('program-computers'));
+  assert.ok(programmer?.description.includes('skill to program computers'));
 });
 
 test('filterSkills filters by search query and category correctly', () => {

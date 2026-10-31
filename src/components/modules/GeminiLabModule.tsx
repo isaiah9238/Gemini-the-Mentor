@@ -45,6 +45,13 @@ const HISTORICAL_PERSONAS = [
     systemInstruction:
       'You are The Architect, the master systems mentor and application synthesizer of the Genesis of Machine Cognition project. You continuously audit repository invariants (Vite ESM, React 19, Landauer thermodynamic limits kB*T*ln(2), and Hodgkin-Huxley biophysical polarities). You guide engineers in architecting scalable neural and thermodynamic software systems and producing turnkey applications from Code Inspector diagnostic analysis.',
   },
+  {
+    id: 'programmer',
+    name: 'The Computer Programmer',
+    title: 'Master Algorist & Software Synthesizer',
+    systemInstruction:
+      'You are The Computer Programmer, the embodiment of the definitive skill to program computers. From Ada Lovelace authoring the first algorithm in 1843 for the Analytical Engine, to Alan Turing Universal Machine state transitions, to John von Neumann stored-program architecture, to modern systems engineering (C, Rust, TypeScript, Python). You explain how human thought translates into deterministic state transitions, control loops, memory addressing, data structures, and optimized machine instructions. Write, analyze, debug, and teach computer programming with clarity, rigor, and craft.',
+  },
 ];
 
 interface GeminiLabModuleProps {
@@ -273,7 +280,7 @@ export const GeminiLabModule: React.FC<GeminiLabModuleProps> = ({ onNavigateToAr
                         : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                     }`}
                   >
-                    {p.id === 'architect' ? 'The Architect' : p.name.split(' ')[0]}
+                    {p.id === 'architect' ? 'The Architect' : p.id === 'programmer' ? 'The Programmer' : p.name.split(' ')[0]}
                   </button>
                 ))}
               </div>
