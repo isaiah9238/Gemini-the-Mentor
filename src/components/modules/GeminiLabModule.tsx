@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Search, Sparkles, Brain, ExternalLink, RefreshCw, User, Compass } from 'lucide-react';
+import { Bot, Send, Search, Sparkles, Brain, ExternalLink, RefreshCw, User, Compass, Video, Play, Pause, Download, Film } from 'lucide-react';
+import {
+  TheDanceService,
+  DANCE_SCENE_PRESETS,
+  DanceScenePreset,
+  VideoAspectRatio,
+  VideoGenerationResult,
+} from '../../services/thedance.js';
 
 interface ChatMessage {
   id: string;
@@ -71,7 +78,7 @@ export const GeminiLabModule: React.FC<GeminiLabModuleProps> = ({ onNavigateToAr
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeMode, setActiveMode] = useState<'chat' | 'search' | 'think'>('chat');
+  const [activeMode, setActiveMode] = useState<'chat' | 'search' | 'think' | 'video'>('chat');
 
   // Search Grounding query
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,7 +90,100 @@ export const GeminiLabModule: React.FC<GeminiLabModuleProps> = ({ onNavigateToAr
   const [thinkResult, setThinkResult] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
 
+  // Video Synthesis Studio (TheDanceService + gemini-omni-1.1-flash)
+  const [selectedDancePreset, setSelectedDancePreset] = useState<DanceScenePreset>(DANCE_SCENE_PRESETS[0]);
+  const [videoPrompt, setVideoPrompt] = useState(DANCE_SCENE_PRESETS[0].prompt);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<VideoAspectRatio>('16:9');
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoResult, setVideoResult] = useState<VideoGenerationResult | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [isProceduralPlaying, setIsProceduralPlaying] = useState(true);
+  const [isRecordingWebm, setIsRecordingWebm] = useState(false);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+
+  const danceCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (activeMode !== 'video') return;
+    const canvas = danceCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    const startTimestamp = performance.now();
+
+    const renderLoop = (now: number) => {
+      const elapsedSeconds = (now - startTimestamp) / 1000;
+      TheDanceService.renderChoreographyFrame(
+        ctx,
+        canvas.width,
+        canvas.height,
+        elapsedSeconds,
+        selectedDancePreset,
+        videoPrompt
+      );
+      if (isProceduralPlaying) {
+        animationFrameId = requestAnimationFrame(renderLoop);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(renderLoop);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [activeMode, selectedDancePreset, isProceduralPlaying, videoPrompt]);
+
+  const handleGenerateOmniVideo = async () => {
+    if (!videoPrompt.trim() || isGeneratingVideo) return;
+    setIsGeneratingVideo(true);
+    setVideoError(null);
+
+    try {
+      const res = await TheDanceService.generateVideo({
+        prompt: videoPrompt,
+        aspectRatio: videoAspectRatio,
+        previousInteractionId: videoResult?.interactionId,
+      });
+      setVideoResult(res);
+    } catch (err: any) {
+      setVideoError(err.message || 'Unable to reach Gemini Omni Flash endpoint');
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  };
+
+  const handleRecordProceduralVideo = () => {
+    const canvas = danceCanvasRef.current;
+    if (!canvas || isRecordingWebm || typeof MediaRecorder === 'undefined') return;
+
+    setIsProceduralPlaying(true);
+    setIsRecordingWebm(true);
+    setRecordedVideoUrl(null);
+
+    const stream = canvas.captureStream(30);
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9'
+      : 'video/webm';
+    const recorder = new MediaRecorder(stream, { mimeType });
+    const chunks: BlobPart[] = [];
+
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) chunks.push(e.data);
+    };
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      setRecordedVideoUrl(url);
+      setIsRecordingWebm(false);
+    };
+
+    recorder.start();
+    setTimeout(() => {
+      if (recorder.state === 'recording') {
+        recorder.stop();
+      }
+    }, 5000);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -249,11 +349,23 @@ export const GeminiLabModule: React.FC<GeminiLabModuleProps> = ({ onNavigateToAr
         >
           <Brain className="w-4 h-4" /> Deep High Thinking (gemini-4-argon)
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveMode('video')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeMode === 'video'
+              ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
+              : 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'
+          }`}
+        >
+          <Video className="w-4 h-4" /> Video Synthesis (gemini-omni-1.1-flash)
+        </button>
       </div>
 
       {/* Mode 1: Historical Role-playing Multi-turn Chat */}
       {activeMode === 'chat' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[640px]">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col h-160">
           {/* Persona Header Switcher */}
           <div className="bg-slate-950 p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -508,6 +620,195 @@ export const GeminiLabModule: React.FC<GeminiLabModuleProps> = ({ onNavigateToAr
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Mode 4: Video Synthesis Studio (TheDanceService + gemini-omni-1.1-flash) */}
+      {activeMode === 'video' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Film className="w-4 h-4 text-amber-400" /> The Dance of Cognition — Video Synthesis Studio (gemini-omni-1.1-flash)
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Generate original scientific & kinetic videos with Gemini Omni Flash Interactions API or render & record real-time procedural choreography.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Aspect Ratio:</span>
+              {(['16:9', '9:16'] as VideoAspectRatio[]).map((ratio) => (
+                <button
+                  key={ratio}
+                  type="button"
+                  onClick={() => setVideoAspectRatio(ratio)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                    videoAspectRatio === ratio
+                      ? 'bg-amber-500 text-slate-950 font-bold'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {ratio}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Choreography Scene Presets */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {DANCE_SCENE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => {
+                  setSelectedDancePreset(preset);
+                  setVideoPrompt(preset.prompt);
+                }}
+                className={`text-left p-3.5 rounded-xl border transition-all ${
+                  selectedDancePreset.id === preset.id
+                    ? 'bg-slate-950 border-amber-500/80 shadow-md shadow-amber-500/10'
+                    : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="text-xs font-bold text-white flex items-center justify-between">
+                  <span>{preset.title}</span>
+                  <span className="text-[10px] font-mono text-amber-400">{preset.tempoBpm} BPM</span>
+                </div>
+                <div className="text-[11px] text-slate-400 mt-1">{preset.subtitle}</div>
+              </button>
+            ))}
+          </div>
+
+          {/* Prompt Input & Gemini Omni Video Trigger */}
+          <div className="space-y-3">
+            <textarea
+              rows={2}
+              value={videoPrompt}
+              onChange={(e) => setVideoPrompt(e.target.value)}
+              placeholder="Describe an original cinematic scientific scene, camera movement, and lighting..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-400 resize-none"
+            />
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleGenerateOmniVideo}
+                disabled={isGeneratingVideo || !videoPrompt.trim()}
+                className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
+              >
+                {isGeneratingVideo ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Video className="w-3.5 h-3.5" />
+                )}
+                Generate Video (gemini-omni-1.1-flash)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsProceduralPlaying((prev) => !prev)}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                {isProceduralPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                {isProceduralPlaying ? 'Pause Live Canvas' : 'Play Live Canvas'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRecordProceduralVideo}
+                disabled={isRecordingWebm}
+                className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                {isRecordingWebm ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Recording 5s WebM...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" /> Render & Record 5s .webm Video
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {videoError && (
+            <div className="bg-amber-950/40 border border-amber-800/60 rounded-xl p-3 text-xs text-amber-200">
+              Gemini Omni API note: {videoError} — Live Procedural Choreography is active below and can be recorded directly to WebM video.
+            </div>
+          )}
+
+          {/* Side-by-side Live Choreography Canvas & Generated Video Player */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+              <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span>Live Procedural Choreography Canvas (TheDanceService)</span>
+                <span className="text-[10px] font-mono text-sky-400">60 FPS HTML5 Canvas</span>
+              </div>
+              <canvas
+                ref={danceCanvasRef}
+                width={640}
+                height={360}
+                className="w-full rounded-lg border border-slate-800 bg-slate-950"
+              />
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2 flex flex-col justify-between">
+              <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span>Rendered Video Output (.mp4 / .webm)</span>
+                <span className="text-[10px] font-mono text-amber-400">
+                  {videoResult?.videoDataUrl
+                    ? 'gemini-omni-1.1-flash MP4'
+                    : recordedVideoUrl
+                      ? 'Recorded WebM Stream'
+                      : 'Ready'}
+                </span>
+              </div>
+
+              {videoResult?.videoDataUrl ? (
+                <div className="space-y-2">
+                  <video
+                    src={videoResult.videoDataUrl}
+                    controls
+                    autoPlay
+                    loop
+                    className="w-full rounded-lg border border-slate-800 bg-black"
+                  />
+                  <a
+                    href={videoResult.videoDataUrl}
+                    download={`gemini-omni-dance-${Date.now()}.mp4`}
+                    className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:underline font-semibold"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download MP4 Video
+                  </a>
+                </div>
+              ) : recordedVideoUrl ? (
+                <div className="space-y-2">
+                  <video
+                    src={recordedVideoUrl}
+                    controls
+                    autoPlay
+                    loop
+                    className="w-full rounded-lg border border-slate-800 bg-black"
+                  />
+                  <a
+                    href={recordedVideoUrl}
+                    download={`${selectedDancePreset.id}-choreography.webm`}
+                    className="inline-flex items-center gap-1.5 text-xs text-sky-400 hover:underline font-semibold"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download Recorded .webm Video
+                  </a>
+                </div>
+              ) : (
+                <div className="h-60 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-800 rounded-lg text-xs text-slate-500">
+                  <Film className="w-8 h-8 text-slate-600 mb-2" />
+                  <p>
+                    Click <strong className="text-amber-400">Generate Video (gemini-omni-1.1-flash)</strong> or{' '}
+                    <strong className="text-sky-400">Render & Record 5s .webm Video</strong> to produce a playable video file.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
