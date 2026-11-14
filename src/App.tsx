@@ -37,6 +37,7 @@ import {
   Rows3,
   PanelLeft,
   LayoutGrid,
+  ChevronDown,
 } from 'lucide-react';
 
 export default function App() {
@@ -53,6 +54,7 @@ export default function App() {
     | 'inspector'
     | 'architect'
   >('silicon');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [latestInspection, setLatestInspection] = useState<InspectionReport | null>(null);
 
@@ -278,82 +280,43 @@ export default function App() {
           </div>
         </div>
 
-        {/* Global Navigation: 2-Row Layout Mode */}
+        {/* Global Navigation: Dropdown Layout */}
         {navLayout === 'tworow' && (
-          <div className="max-w-7xl mx-auto mt-3.5 space-y-2 border-t border-slate-900/90 pt-2.5">
-            {/* Row 1: Physical & Theoretical Foundations (Tabs 1 to 5) */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-slate-800 text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider shrink-0 select-none">
-                <Cpu className="w-3 h-3 text-sky-400" /> Foundations &amp; Physics
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 flex-1">
-                {FOUNDATION_TABS.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
-                        isActive
-                          ? 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/25 font-bold scale-[1.01]'
-                          : 'text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-850 border border-slate-800/80'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      <span>{tab.label}</span>
-                      <span
-                        className={`text-[10px] hidden xl:inline px-1.5 py-0.5 rounded-md font-mono ${
-                          isActive
-                            ? 'bg-sky-600/30 text-slate-950 font-bold'
-                            : 'bg-slate-950 text-slate-400'
-                        }`}
-                      >
-                        {tab.tag}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          <div className="max-w-7xl mx-auto mt-3.5 relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-white hover:border-sky-500 transition-colors"
+            >
+              <span>{ALL_TABS.find((t) => t.id === activeTab)?.label}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-            {/* Row 2: Cognitive Workbench & Synthesis Studio (Tabs 6 to 11) */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-slate-800 text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider shrink-0 select-none">
-                <Compass className="w-3 h-3 text-indigo-400" /> Workbench &amp; Studio
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 flex-1">
-                {WORKBENCH_TABS.map((tab) => {
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+                {ALL_TABS.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
                   return (
                     <button
                       key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold transition-colors ${
                         isActive
-                          ? 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/25 font-bold scale-[1.01]'
-                          : 'text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-850 border border-slate-800/80'
+                          ? 'bg-sky-500 text-slate-950'
+                          : 'text-slate-300 hover:bg-slate-900 hover:text-white'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      <span>{tab.label}</span>
-                      <span
-                        className={`text-[10px] hidden xl:inline px-1.5 py-0.5 rounded-md font-mono ${
-                          isActive
-                            ? 'bg-sky-600/30 text-slate-950 font-bold'
-                            : 'bg-slate-950 text-slate-400'
-                        }`}
-                      >
-                        {tab.tag}
-                      </span>
+                      <Icon className="w-4 h-4" />
+                      {tab.label}
+                      <span className="ml-auto text-[10px] font-mono opacity-60">{tab.tag}</span>
                     </button>
                   );
                 })}
               </div>
-            </div>
+            )}
           </div>
         )}
 
