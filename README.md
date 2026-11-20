@@ -34,12 +34,14 @@ The workbench integrates **11 specialized scientific and architectural modules**
 ---
 
 ### Module 1: Physical Silicon & Logic
+
 - **Photolithography & 3D Transistor Gate Inspector**: Exploded-layer 3D assembly (Substrate, Silicon Dioxide Dielectric, Polysilicon/Metal Gate, Tungsten Vias, and Copper Interconnects) with real-time gate voltage modulation ($V_g = 0.0\text{V} \leftrightarrow 1.2\text{V}$).
 - **Nanoscale Logic Synthesizer**: Physical implementation of primitive Boolean logic gates (`AND`, `OR`, `NOT`, `NAND`, `XOR`) mapping physical voltages to discrete binary states ($0$ and $1$).
 - **Instructions Per Clock (IPC) & Silicon Lottery**: Dynamic binning simulator contrasting clock frequency ($\text{GHz}$) against IPC to compute effective operational throughput ($\text{Billion Ops/s}$) and cycle duration in picoseconds.
 - **Physical Scale Continuum**: Concrete comparative benchmarks from single-crystal silicon ingots ($300\text{ mm}$), human red blood cells ($7{,}000\text{ nm}$), and influenza viruses ($100\text{ nm}$) down to advanced transistor gate features ($10\text{–}30\text{ nm}$).
 
 ### Module 2: Historical Foundations
+
 - **Ada Lovelace (1843) & Charles Babbage's Analytical Engine**:
   - *Note A*: The fundamental separation of abstract operations from mere numerical quantities.
   - *Note G*: The world's first published computer program, featuring an interactive step-by-step Bernoulli number calculator ($B_1, B_3, B_5, \dots$).
@@ -53,6 +55,7 @@ The workbench integrates **11 specialized scientific and architectural modules**
   - Interactive logic gate synthesis (`AND`, `OR`, `NOT`, `XOR`) via adjustable firing thresholds $\theta$.
 
 ### Module 3: Emergent Sparks of AGI
+
 - **Theory of Mind (ToM) & Social Reasoning**:
   - Modified digital Sally-Anne False-Belief test with shared Dropbox folders.
   - Intention and emotion attribution involving nonsense variables (the "ZURFIN" test).
@@ -64,6 +67,7 @@ The workbench integrates **11 specialized scientific and architectural modules**
   - Structural proteomics resolution of Levinthal's paradox, CASP scoring ($>90$ GDT), and static crystal structures vs. dynamic in-vivo conformational transitions.
 
 ### Module 4: Paradox of Scale & Hardware Thermodynamics
+
 - **The Von Neumann Bottleneck & Memory Wall**:
   - Interactive bus energy dissipation model proportional to wire length: $E \propto L$.
   - Energy disparity between computation and memory shuttling across copper interconnects.
@@ -78,6 +82,7 @@ The workbench integrates **11 specialized scientific and architectural modules**
   - Modern CMOS operational dissipation ($\sim 10^{-12}\text{ J}$) operating $10^8\times$ above the Landauer floor.
 
 ### Module 5: Neuromorphic & Ionic Alternatives
+
 - **Biological Energy Disparity**:
   - Supercomputing brain simulation requirement ($2.7\text{ Billion Watts}$) vs. biological brain ($15\text{–}20\text{ Watts}$).
 - **Action Potential & Ionic Membrane Biophysics**:
@@ -90,29 +95,34 @@ The workbench integrates **11 specialized scientific and architectural modules**
   - IBM NorthPole, SpinCloud Systems digital spike packets, Texas A&M Super-Turing edge navigation, $\text{NbO}_2$ ECRAM electrochemical memory, and LLNL nanofluidic ionic computing.
 
 ### Module 6: Gemini Cognitive Lab
+
 - **Pioneer Multi-Turn Chatbot**:
   - Dynamic interlocutor personas: **Ada Lovelace (1843)**, **Alan Turing (1950)**, **Warren McCulloch (1943)**, **Neuromorphic Physicist**, and **The Architect**.
 - **Real-Time Google Search Grounding**: Powered by `@google/genai` with `gemini-3.8-flash` for up-to-date empirical citations.
 - **Deep High-Thinking Deductions**: Powered by `gemini-4-argon` for multi-step philosophical and physical problem solving.
 
 ### Module 7: Research Notebook
+
 - Dual-pane Markdown and LaTeX math editor.
 - Live telemetry: Word count, character count, line metrics, and estimated reading time.
 - Heading structure outline navigation.
 - 1-click export to Google Drive and bi-directional conversion into **AI Agent Skill directives** with YAML frontmatter.
 
 ### Module 8: Virtual File Explorer
+
 - Complete hierarchical Virtual File System (VFS) with directory creation, file creation, inline editing, deletion, and renaming.
 - Fast file search across deeply nested paths.
 - File system telemetry and synchronization with external cloud storage.
 
 ### Module 9: Connected Apps & Skills (Agent Skill Registry)
+
 - Inter-application connectivity via Firebase Firestore.
 - Dynamic skill search and category filtering (Physics, Mathematics, Systems, Biophysics).
 - Live interactive mind-map visualizer representing skill dependencies and system flows.
 - Real-time invocation telemetry and execution metrics.
 
 ### Module 10: Code Inspector Engine
+
 - Autonomous code auditor for incoming scripts and project files.
 - Compatibility scoring ($0\text{–}100$) evaluating:
   - Vite ESM module syntax (flags legacy CommonJS `require`/`module.exports`).
@@ -124,6 +134,7 @@ The workbench integrates **11 specialized scientific and architectural modules**
 - Direct pipeline to scaffold turnkey applications in **The Architect**.
 
 ### Module 11: The Architect Studio
+
 - **Continuous Topology & Invariant Monitor**: Holistic health scoring ($0\text{–}100$) auditing all 10 modules and core physical/architectural invariants.
 - **Systems Mentor**: Context-aware advisor tied directly to chat, providing grounded scientific guidance and 1-click action buttons.
 - **Autonomous Application Generator**: Produces complete 4-file applications from Code Inspector diagnostic analysis:
@@ -159,7 +170,8 @@ All domain logic is decoupled into pure TypeScript modules in `src/logic/` and v
 npm test
 ```
 
-### Verified Test Domains:
+### Verified Test Domains
+
 1. `src/logic/physics.test.ts`: Landauer erasure limits ($1\text{ K}$ to $300\text{ K}$), interconnect wire length energy dissipation ($E \propto L$), clock frequency and IPC throughput.
 2. `src/logic/mccullochPitts.test.ts`: Binary threshold logic units (`AND`, `OR`, `NOT`, `XOR`) and absolute inhibitory signal suppression.
 3. `src/logic/actionPotential.test.ts`: Hodgkin-Huxley depolarization peaks, repolarization curves, and probabilistic synaptic transmission rates.
@@ -175,10 +187,12 @@ npm test
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - **Node.js**: v20.x or higher
 - **npm**: v10.x or higher
 
 ### Installation
+
 ```bash
 # Clone or navigate to the workspace
 cd /app/applet
@@ -188,7 +202,9 @@ npm install
 ```
 
 ### Environment Variables
+
 Configure your environment variables in `.env` (refer to `.env.example`):
+
 ```env
 # Google Gemini API Key (required for Gemini Cognitive Lab features)
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -196,6 +212,7 @@ PORT=3000
 ```
 
 ### Running Locally
+
 ```bash
 # Start the full-stack Express + Vite server on port 3000
 npm run dev
