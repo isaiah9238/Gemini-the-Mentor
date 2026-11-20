@@ -207,6 +207,59 @@ app.post('/api/gemini/analyze', async (req: Request, res: Response): Promise<voi
   }
 });
 
+// Video Generation & Editing Endpoint (gemini-omni-1.1-flash via Interactions API)
+app.post('/api/gemini/video', async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!ai) {
+      res.status(503).json({
+        error: 'Gemini API Key is not configured on the server. Use the Live Procedural Choreography canvas or configure GEMINI_API_KEY.',
+      });
+      return;
+    }
+
+    const {
+      prompt,
+      aspectRatio = '16:9',
+      previousInteractionId,
+    } = req.body as {
+      prompt?: string;
+      aspectRatio?: '16:9' | '9:16';
+      previousInteractionId?: string;
+    };
+
+    if (!prompt || !prompt.trim()) {
+      res.status(400).json({ error: 'Video prompt is required.' });
+      return;
+    }
+
+    const interaction = await ai.interactions.create({
+      model: 'gemini-omni-1.1-flash',
+      input: prompt.trim(),
+      ...(previousInteractionId ? { previous_interaction_id: previousInteractionId } : {}),
+      response_format: {
+        type: 'video',
+        aspect_ratio: aspectRatio === '9:16' ? '9:16' : '16:9',
+      },
+    });
+
+    const videoBase64 = interaction.output_video?.data || null;
+    const mimeType = interaction.output_video?.mime_type || 'video/mp4';
+
+    res.json({
+      interactionId: interaction.id,
+      videoBase64,
+      mimeType,
+      text: interaction.output_text || '',
+      modelUsed: 'gemini-omni-1.1-flash',
+    });
+  } catch (error: any) {
+    console.error('Gemini Video error:', error);
+    res.status(500).json({
+      error: error.message || 'Error generating video with gemini-omni-1.1-flash',
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
   res.json({
